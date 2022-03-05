@@ -23,7 +23,7 @@ public class ArrowController : MonoBehaviour
 
     private void Destroy(Collider other)
     {
-        if(other.gameObject.CompareTag("floor"))
+        if(other.gameObject.CompareTag("box"))
         {
             Destroy(gameObject);
         }

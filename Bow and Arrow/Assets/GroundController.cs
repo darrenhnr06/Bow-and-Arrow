@@ -6,7 +6,7 @@ public class GroundController : MonoBehaviour
 {
     public float distance;
     
-    private void OnTriggerEnter(Collider other)
+    /*private void OnTriggerEnter(Collider other)
     {
         if(other.gameObject.CompareTag("box"))
         {
@@ -14,5 +14,5 @@ public class GroundController : MonoBehaviour
             pos.z += distance;
             transform.position = pos;
         }
-    }
+    }*/
 }

@@ -10,6 +10,8 @@ public class EnemyController : MonoBehaviour
 
     public GameObject player;
 
+    public GameObject enemyRow;
+
     private void Awake()
     {
        dir = transform.forward;
@@ -18,14 +20,9 @@ public class EnemyController : MonoBehaviour
 
     private void Update()
     {
-        //rb.velocity = (dir * speed); //+ (Vector3.up * Physics.gravity.y * 0.2f);
-        //rb.velocity = (dir * speed);
         transform.Translate(dir * Time.deltaTime * speed);
     }
 
-
-
-    
 
     private void OnTriggerExit(Collider other)
     {
@@ -46,9 +43,9 @@ public class EnemyController : MonoBehaviour
     {
         if (other.gameObject.CompareTag("arrow"))
         {
-            //player.GetComponent<PlayerController>().SpawnEnemy(gameObject);
             Destroy(other.gameObject);
-            gameObject.SetActive(false);
+            EnemyCount.enemyRowHit++;
+            enemyRow.SetActive(false);
         }
     }
 }

@@ -59,10 +59,23 @@ public class PlayerController : MonoBehaviour
     private bool run;
 
     public float projectionDelay;
+    private float projectionDelayTemp;
+
     private bool delayAnimation;
 
-    float minRotation;
-    float maxRotation;
+    public float minArrowSpeed;
+
+    public float maxArrowSpeed;
+
+    public GameObject[] enemiesRow;
+
+    public float playerEnemiesGap;
+
+    public float enemiesGap;
+
+    public float playerEnemyRestrictGap;
+
+    private bool runTimer;
 
     private void Awake()
     {
@@ -88,12 +101,13 @@ public class PlayerController : MonoBehaviour
         dir = directionCube.transform.forward;
 
         run = true;
-        arrowSpeed = 0;
+        arrowSpeed = minArrowSpeed;
 
         delayAnimation = true;
+        runTimer = false;
 
-        minRotation = 0;
-        maxRotation = playerRotateFactor;
+        projectionDelayTemp = projectionDelay;
+
     }
 
     private void Start()
@@ -119,7 +133,7 @@ public class PlayerController : MonoBehaviour
             bow.gameObject.SetActive(true);
 
             arrowOne.gameObject.SetActive(true);
-            
+
             //animator.SetBool("shoot", true);
             //StartCoroutine(InitiateShoot());
 
@@ -127,6 +141,10 @@ public class PlayerController : MonoBehaviour
             arrowRigidbodyOne.constraints = RigidbodyConstraints.None;
             arrowRigidbodyTwo.constraints = RigidbodyConstraints.None;
             arrowRigidbodyThree.constraints = RigidbodyConstraints.None;
+
+            animator.SetBool("shoot", true);
+            //runTimer = true;
+
 
             StartCoroutine(TouchTimer());
         }
@@ -140,17 +158,69 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = transform.forward * speed;
         }
+
+        if (EnemyCount.enemyRowHit >= 12)
+        {
+            SpawnEnemy();
+            EnemyCount.enemyRowHit = 0;
+        }
+
+        RaycastHit hit;
+        Ray ray = new Ray(transform.position, transform.forward);
+
+        if (Physics.Raycast(ray, out hit, playerEnemyRestrictGap))
+        {
+            if (hit.collider.CompareTag("box"))
+            {
+                speed = 4.2f;
+            }
+            else
+            {
+                speed = 6;
+            }
+        }
+        else
+        {
+            speed = 6;
+        }
+
+        if (arrowSpeed <= 90f)
+        {
+            Physics.gravity = new Vector3(0, -150, 0);
+            arrowRotateDuration = 0.5f;
+        }
+        else
+        {
+            Physics.gravity = new Vector3(0, -50, 0);
+            arrowRotateDuration = 1.5f;
+        }
+
+        /*if (runTimer == true)
+        {
+            projectionDelay -= Time.deltaTime;
+
+            if (projectionDelay <= 0)
+            {
+                animator.speed = 0;
+                runTimer = false;
+                StartCoroutine(TouchTimer());
+            }
+        }*/
+
+        if(Input.touchCount == 0)
+        {
+            setAngle = false;
+        }
     }
 
     IEnumerator InitiateShoot()
     {
         yield return new WaitForSeconds(0.6f);
-        if(delayAnimation == true)
+        if (delayAnimation == true)
         {
             animator.speed = 0;
         }
-        
-        Debug.Log("Shoot initiated");
+
     }
 
     IEnumerator SetAnimation()
@@ -163,43 +233,57 @@ public class PlayerController : MonoBehaviour
     {
         animator.SetBool("shoot", true);
         StartCoroutine(InitiateShoot());
+        //yield return new WaitForSeconds(0.6f);
+        //animator.speed = 0;
 
-        Debug.Log("Touch timer started");
         setAngle = true;
         countTouch = false;
         int k = 0;
 
-        Debug.Log("Projection Delay Started");
+
 
         projectionOne.gameObject.SetActive(true);
         projectionTwo.gameObject.SetActive(true);
         projectionThree.gameObject.SetActive(true);
 
+        
+         while (k <= projectionDelay)
+         {
+             touchTime += 0.005f;
+             arrowSpeed += touchTime * arrowFactor;
+             k++;
+             yield return new WaitForSeconds(0.1f);
 
-        while (k <= projectionDelay)
-        {
-            touchTime += 0.005f;
-            arrowSpeed += touchTime * arrowFactor;
-            k++;
-            yield return new WaitForSeconds(0.1f);
+             if(setAngle == false)
+             {
+                 delayAnimation = false;
+                 goto abc;
+             }
+          }
 
-            if(setAngle == false)
-            {
-                delayAnimation = false;
-                goto abc;
-            }
-        }
+        Debug.Log(arrowSpeed);
 
-        Debug.Log("Set angle started");
+
         while (setAngle == true)
         {
+            Debug.Log("abcd");
             if (setAngle == true)
             {
                 touchTime += 0.005f;
                 arrowSpeed += touchTime * arrowFactor;
+
+                if(arrowSpeed >= maxArrowSpeed)
+                {
+                    break;
+                }
+               
+
+
+                //Debug.Log(arrowSpeed);
                 //projection.gameObject.SetActive(true);
                 k++;
             }
+
             else
             {
                 break;
@@ -209,7 +293,7 @@ public class PlayerController : MonoBehaviour
         }
 
     abc:
-        Debug.Log("abcddddd");
+        
 
         projectionOne.gameObject.SetActive(false);
         projectionTwo.gameObject.SetActive(false);
@@ -269,7 +353,8 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("shoot", false);
 
         run = true;
-        arrowSpeed = 0;
+        arrowSpeed = minArrowSpeed;
+        projectionDelay = projectionDelayTemp;
         StartCoroutine(StartCountTouch());
     }
 
@@ -290,17 +375,18 @@ public class PlayerController : MonoBehaviour
         return arrowSpeed;
     }
 
-    public void SpawnEnemy(GameObject enemy)
+    public void SpawnEnemy()
     {
-        StartCoroutine(CreateEnemy(enemy));
+        
+        for(int i=0; i < enemiesRow.Length; i++)
+        {
+            enemiesRow[i].gameObject.SetActive(true);
+            for (int j = 0; j < enemiesRow[i].transform.childCount; j++)
+            {
+                Vector3 pos = new Vector3(enemiesRow[i].transform.GetChild(j).transform.position.x, transform.position.y, transform.position.z + playerEnemiesGap + (enemiesGap * (i + 1)));
+                enemiesRow[i].transform.GetChild(j).transform.position = pos;
+            }
+        }
     }
 
-    IEnumerator CreateEnemy(GameObject enemy)
-    {
-        yield return new WaitForSeconds(1.5f);
-
-        enemy.gameObject.SetActive(true);
-        Vector3 pos = enemy.transform.position + new Vector3(0, 0, 10);
-        enemy.gameObject.transform.position = pos;
-    }
 }
